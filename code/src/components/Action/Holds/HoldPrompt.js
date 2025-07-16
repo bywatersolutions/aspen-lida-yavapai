@@ -443,7 +443,7 @@ export const HoldPrompt = (props) => {
                          </ModalHeader>
                          <ModalBody mt="$3">
                               {alreadyOnHold ? (
-                                   <Text>This title is already on hold for you. Are you sure you want to place a duplicate hold?</Text>
+                                   <Text color={textColor}>{getTermFromDictionary(language, 'already_on_hold')}</Text>
                               ) : null}
                               {promptForHoldNotifications ? (
                                    <HoldNotificationPreferences
