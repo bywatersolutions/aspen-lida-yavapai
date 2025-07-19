@@ -24,6 +24,8 @@ import { formatDiscoveryVersion, LIBRARY, reloadBrowseCategories } from '../../u
 import { PATRON } from '../../util/loadPatron';
 import { ResetExpiredPin } from './ResetExpiredPin';
 
+import { logDebugMessage, logInfoMessage, logWarnMessage, logErrorMessage } from '../../util/logging.js';
+
 export const GetLoginForm = (props) => {
      const navigation = useNavigation();
      const barcode = useRoute().params?.barcode ?? null;
@@ -82,11 +84,11 @@ export const GetLoginForm = (props) => {
                if (version >= '24.03.00') {
                     const currentStatus = await getCatalogStatus(patronsLibrary['baseUrl']);
                     if (currentStatus) {
-                         console.log(currentStatus);
+                         logDebugMessage('Catalog status: ' + JSON.stringify(currentStatus));
                          updateCatalogStatus(currentStatus);
                          if (currentStatus.status >= 1) {
                               // catalog is offline
-                              console.log('catalog is offline');
+                              logInfoMessage('catalog is offline');
                               setLoading(false);
                               setLoginError(true);
                               if (currentStatus.message) {
@@ -98,8 +100,8 @@ export const GetLoginForm = (props) => {
                               }
                               return;
                          } else {
-                              console.log('catalog online');
-                              console.log(catalogStatus);
+                              logInfoMessage('catalog online');
+                              logDebugMessage(catalogStatus);
                               updateCatalogStatus({
                                    status: 0,
                                    message: null,
@@ -110,7 +112,7 @@ export const GetLoginForm = (props) => {
 
                if (version >= '23.02.00') {
                     setPinValidationRules(result.library.pinValidationRules);
-                    console.log(patronsLibrary['baseUrl']);
+                    logDebugMessage ("Base Url is: " + patronsLibrary['baseUrl']);
                     const validatedUser = await loginToLiDA(valueUser, valueSecret, patronsLibrary['baseUrl']);
                     if (validatedUser) {
                          GLOBALS.appSessionId = validatedUser.session ?? '';
@@ -123,13 +125,13 @@ export const GetLoginForm = (props) => {
                               setLoading(false);
                          } else {
                               if (validatedUser.resetToken) {
-                                   console.log('Expired pin!');
+                                   logInfoMessage('Expired pin!');
                                    setResetToken(validatedUser.resetToken);
                                    setUserId(validatedUser.userId);
                                    setExpiredPin(true);
                                    setLoading(false);
                               } else {
-                                   console.log(validatedUser.message);
+                                   logInfoMessage(validatedUser.message);
                                    setLoginError(true);
                                    setLoginErrorMessage(validatedUser.message);
                                    setLoading(false);
@@ -151,6 +153,7 @@ export const GetLoginForm = (props) => {
                     }
                }
           } else {
+               logWarnMessage("Could not connect to library, base url is " + patronsLibrary['baseUrl']);
                setLoading(false);
                setLoginError(true);
                setLoginErrorMessage(getTermFromDictionary('en', 'error_no_library_connection'));
