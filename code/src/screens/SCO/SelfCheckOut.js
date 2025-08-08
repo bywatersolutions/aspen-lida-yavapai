@@ -251,7 +251,7 @@ export const SelfCheckOut = () => {
                                        </ModalHeader>
                                        <ModalBody>
                                             <FormControl pb="$5">
-                                                 <Input>
+                                                 <Input borderColor={colorMode === 'light' ? theme['colors']['coolGray']['500'] : theme['colors']['gray']['300']}>
                                                       <InputField color={textColor} keyboardType={keyboardType === 1 ? 'number-pad' : 'default'} variant="outline" autoCapitalize="none" placeholder={getTermFromDictionary(language, 'enter_barcode')} size="$lg" defaultValue={newBarcode} onChangeText={text => setNewBarcode(text)}/>
                                                  </Input>
                                             </FormControl>
