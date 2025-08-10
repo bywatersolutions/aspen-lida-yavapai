@@ -208,7 +208,7 @@ export const MyCheckouts = () => {
 
                     term = getTermFromDictionary(language, 'sort_by_library_account');
                     if (!term.includes('%1%')) {
-                         tmp = _.set(tmp, 'library_account', term);F
+                         tmp = _.set(tmp, 'library_account', term);
                          setSortBy(tmp);
                     }
 
