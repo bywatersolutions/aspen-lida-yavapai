@@ -2,6 +2,8 @@ import React from 'react';
 import { Center, Heading, HStack, VStack, Spinner } from '@gluestack-ui/themed';
 import { ThemeContext } from '../context/initialContext';
 import {isEmpty, isUndefined} from 'lodash';
+
+import { logDebugMessage, logInfoMessage, logWarnMessage, logErrorMessage } from '../util/logging.js';
 /*
 TODO: Translate the accessibility labels
 */
@@ -29,15 +31,16 @@ export function loadingSpinner(message = '') {
      );
 }
 
-export const LoadingSpinner = (message = '') => {
+export const LoadingSpinner = (props) => {
      const { colorMode, theme, textColor } = React.useContext(ThemeContext);
-     if (!isUndefined(message) && !isEmpty(message)) {
+     if (!isUndefined(props) && !isEmpty(props) && !isUndefined(props.message) && !isEmpty(props.message)) {
+          logDebugMessage("Showing loading spinner with message: " + props.message);
           return (
                <Center flex={1} px="$3">
                     <VStack space="md" alignItems="center">
                          <Spinner size="large" color={theme['colors']['primary']['500']} accessibilityLabel="Loading..." />
                          <Heading size="md" color={textColor}>
-                              {message}
+                              {props.message}
                          </Heading>
                     </VStack>
                </Center>

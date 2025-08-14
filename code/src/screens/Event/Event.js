@@ -436,10 +436,10 @@ const getAddToCalendar = (start, end, location, event) => {
                <Pressable py="3" onPress={() => handleAddToCalendar()}>
                     <HStack space="1" alignItems="center" justifyContent="space-between">
                          <HStack space="3" alignItems="center">
-                              <Icon as={MaterialIcons} name="calendar-today" size="md" />
+                              <Icon as={MaterialIcons} name="calendar-today" size="md" color={textColor}/>
                               <VStack>
-                                   <Text bold>{displayDay}</Text>
-                                   <Text>
+                                   <Text bold color={textColor}>{displayDay}</Text>
+                                   <Text color={textColor}>
                                         {displayStartTime} - {displayEndTime}
                                    </Text>
                               </VStack>

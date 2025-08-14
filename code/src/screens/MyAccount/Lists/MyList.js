@@ -414,9 +414,8 @@ export const MyList = () => {
                                         defaultValue={sort}
                                         accessibilityLabel={getTermFromDictionary(language, 'select_sort_method')}
                                         onValueChange={(itemValue) => setSort(itemValue)}>
-                                        <SelectTrigger variant="outline" size="sm" borderWidth={colorMode === 'light' ? 0 : 1}
-                                                       borderColor={colorMode === 'light' ? '$none' : theme['colors']['gray']['400']}>
-                                             <SelectInput pt="$2" mt="$1" fontSize="$sm" color={textColor} value={sortLabel()} />
+                                        <SelectTrigger variant="outline" size="sm">
+                                             <SelectInput pt="$2" fontSize="$sm" color={textColor} value={sortLabel()} />
                                              <SelectIcon mr="$3">
                                                   <Icon color={textColor} as={ChevronDownIcon} />
                                              </SelectIcon>

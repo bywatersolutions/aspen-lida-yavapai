@@ -1,4 +1,4 @@
-import { Badge, Box, Center, FlatList, Pressable, Text, HStack, VStack } from '@gluestack-ui/themed';
+import { Badge, BadgeText, Box, Center, FlatList, Pressable, Text, HStack, VStack } from '@gluestack-ui/themed';
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native';
@@ -116,7 +116,7 @@ const Item = (data) => {
                                    {item.title}{' '}
                                    {hasNewResults === 1 ? (
                                         <Badge mb="-0.5" colorScheme="warning">
-                                             {getTermFromDictionary(language, 'flag_updated')}
+                                             <BadgeText>{getTermFromDictionary(language, 'flag_updated')}</BadgeText>
                                         </Badge>
                                    ) : null}
                               </Text>

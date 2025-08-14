@@ -382,9 +382,8 @@ export const MyCheckouts = () => {
                                         defaultValue={checkoutSource}
                                         accessibilityLabel={getTermFromDictionary(language, 'filter_by_source_label')}
                                         onValueChange={(itemValue) => toggleCheckoutSource(itemValue)}>
-                                        <SelectTrigger variant="outline" size="sm" borderWidth={colorMode === 'light' ? 0 : 1}
-                                                       borderColor={colorMode === 'light' ? '$none' : theme['colors']['gray']['400']}>
-                                             <SelectInput pt="$2" mt="$1" fontSize="$sm" color={textColor} value={checkoutSourceSelectLabel()} />
+                                        <SelectTrigger variant="outline" size="sm">
+                                             <SelectInput pt="$2" color={textColor} value={checkoutSourceSelectLabel()} />
                                              <SelectIcon mr="$3">
                                                   <Icon color={textColor} as={ChevronDownIcon} />
                                              </SelectIcon>
@@ -415,9 +414,8 @@ export const MyCheckouts = () => {
                                         defaultValue={userCheckoutSortMethod}
                                         accessibilityLabel={getTermFromDictionary(language, 'select_sort_method')}
                                         onValueChange={(itemValue) => toggleSort(itemValue)}>
-                                        <SelectTrigger variant="outline" size="sm" borderWidth={colorMode === 'light' ? 0 : 1}
-                                                       borderColor={colorMode === 'light' ? '$none' : theme['colors']['gray']['400']}>
-                                             <SelectInput pt="$2" mt="$1" fontSize="$sm" color={textColor} value={checkoutSortLabel()} />
+                                        <SelectTrigger variant="outline" size="sm">
+                                             <SelectInput pt="$2" color={textColor} value={checkoutSortLabel()} />
                                              <SelectIcon mr="$3">
                                                   <Icon color={textColor} as={ChevronDownIcon} />
                                              </SelectIcon>

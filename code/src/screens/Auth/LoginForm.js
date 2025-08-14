@@ -16,7 +16,6 @@ import {
      Input,
      InputField, InputIcon,
      InputSlot,
-     Pressable,
 } from '@gluestack-ui/themed';
 import React, { useRef } from 'react';
 
