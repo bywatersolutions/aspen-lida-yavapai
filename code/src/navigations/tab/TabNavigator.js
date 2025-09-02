@@ -24,7 +24,7 @@ export default function TabNavigator() {
 
      const activeIcon = colorMode === 'light' ? theme['colors']['coolGray']['700'] : theme['colors']['coolGray']['300'];
      const inactiveIcon = colorMode === 'light' ? theme['colors']['coolGray']['500'] : theme['colors']['coolGray']['400'];
-     const tabBarBackgroundColor = colorMode === 'light' ? theme['colors']['warmGray']['50'] : theme['colors']['coolGray']['800'];
+     const tabBarBackgroundColor = colorMode === 'light' ? theme['colors']['coolGray']['100'] : theme['colors']['coolGray']['900'];
 
      return (
           <Tab.Navigator
