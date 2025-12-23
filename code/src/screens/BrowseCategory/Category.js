@@ -1,96 +1,372 @@
-import { Button, ButtonGroup, ButtonIcon, ButtonText, FlatList, View, HStack, Pressable, Text, SafeAreaView } from '@gluestack-ui/themed';
-import { XIcon } from 'lucide-react-native';
+import { Button, ButtonGroup, ButtonIcon, ButtonText, FlatList, View, HStack, Pressable, Text, SafeAreaView, Box, Badge, BadgeText } from '@gluestack-ui/themed';
+import { ScrollView } from 'react-native';
 import _ from 'lodash';
 import React from 'react';
 
-import { LibrarySystemContext } from '../../context/initialContext';
+import { BrowseCategoryContext, LanguageContext, LibrarySystemContext, ThemeContext } from '../../context/initialContext';
 import { getTermFromDictionary } from '../../translations/TranslationService';
+import { Image } from 'expo-image';
+import { MaterialIcons } from '@expo/vector-icons';
+import { navigateStack } from '../../helpers/RootNavigator';
+import { updateBrowseCategoryStatus } from '../../util/loadPatron';
+import { getErrorMessage } from '../../util/apiAuth';
+import { logErrorMessage } from '../../util/logging';
+import { useQueryClient } from '@tanstack/react-query';
 
-const DisplayBrowseCategory = (props) => {
-     const { language, id, renderRecords, libraryUrl, records, categoryLabel, categoryKey, loadMore, categorySource, discoveryVersion, onPressCategory, categoryList, hideCategory, isHidden, textColor } = props;
+const DisplayBrowseCategory = ({category}) => {
+     const queryClient = useQueryClient();
+     const { theme } = React.useContext(ThemeContext);
+     const { language } = React.useContext(LanguageContext);
+     const { library } = React.useContext(LibrarySystemContext);
+     const { maxNum } = React.useContext(BrowseCategoryContext);
 
-     const hide = getTermFromDictionary(language, 'hide');
-     let key = categoryKey;
-     if (id) {
-          key = id;
-     }
+     const [showErrorDialog, setShowErrorDialog] = React.useState(false);
+     const [errorTitle, setErrorTitle] = React.useState('');
+     const [errorMessage, setErrorMessage] = React.useState('');
 
-     //console.log(categoryLabel + ': ' + isHidden);
-     if (isHidden) {
+     const [selectedSubCategoryIndex, setSelectedSubCategoryIndex] = React.useState(0);
+     const handleSelectSubCategory = (index) => setSelectedSubCategoryIndex(index);
+
+     const subCategories = category.subCategories ?? [];
+     const records = category.records ?? [];
+
+     if(records.length === 0 && subCategories.length === 0) {
+          // Nothing to show, probably shouldn't happen in production but just in case
           return null;
      }
 
-     //console.log(records);
+     const showSubCategoryRecords =
+          subCategories.length > 0 && subCategories[selectedSubCategoryIndex]?.records?.length > 0;
 
-     if (typeof records !== 'undefined' || typeof records !== 'subCategories') {
-          let newArr = [];
-          if (typeof records !== 'undefined' && !_.isNull(records)) {
-               newArr = Object.values(records);
-          }
-          const recordCount = newArr.length;
-          if (newArr.length > 0) {
-               return (
-                    <LibrarySystemContext.Consumer>
-                         {(library) => (
-                              <SafeAreaView>
-                                   <View
-                                        pb="$5"
-                                        sx={{
-                                             '@base': {
-                                                  height: categorySource === 'SavedSearch' ? 240 : 225,
-                                             },
-                                             '@lg': {
-                                                  height: 325,
-                                             },
-                                        }}>
-                                        <HStack space="$3" alignItems="center" justifyContent="space-between" pb="$2">
-                                             {library.version >= '22.10.00' ? (
-                                                  <Pressable onPress={() => onPressCategory(categoryLabel, categoryKey, categorySource)} maxWidth="80%" mb="$1">
-                                                       <Text
-                                                            color={textColor}
-                                                            sx={{
-                                                                 '@base': {
-                                                                      fontSize: 16,
-                                                                 },
-                                                                 '@lg': {
-                                                                      fontSize: 22,
-                                                                 },
-                                                            }}
-                                                            bold>
-                                                            {categoryLabel}
-                                                       </Text>
-                                                  </Pressable>
-                                             ) : (
-                                                  <Text
-                                                       maxWidth="80%"
-                                                       mb="$1"
-                                                       bold
-                                                       color={textColor}
-                                                       size={{
-                                                            base: 'lg',
-                                                            lg: '2xl',
-                                                       }}>
-                                                       {categoryLabel}
-                                                  </Text>
-                                             )}
+     const maxItems = 7;
 
-                                             <Button size="xs" variant="link" onPress={() => hideCategory(libraryUrl, key)}>
-                                                  <ButtonIcon as={XIcon} color={textColor} mr="$1" />
-                                                  <ButtonText fontWeight="$medium" sx={{ color: textColor }}>
-                                                       {hide}
-                                                  </ButtonText>
-                                             </Button>
-                                        </HStack>
-                                        <FlatList horizontal data={newArr} keyExtractor={(item, index) => index.toString()} renderItem={(item, index) => renderRecords(item, library.baseUrl, library.version, index)} initialNumToRender={5} ListFooterComponent={loadMore(categoryLabel, categoryKey, libraryUrl, categorySource, recordCount, discoveryVersion)} extra={categoryList} />
-                                   </View>
-                              </SafeAreaView>
+     const hasMore = records.length > maxItems;
+     const displayedData = hasMore ? records.slice(0, maxItems) : records;
+
+     let subCategoryRecords = [];
+     let subCategoryHasMore = false;
+     if (showSubCategoryRecords) {
+          const allRecords = subCategories[selectedSubCategoryIndex].records;
+          subCategoryHasMore = allRecords.length > maxItems;
+          subCategoryRecords = subCategoryHasMore ? allRecords.slice(0, maxItems) : allRecords;
+     }
+
+     const onPressHide = async (textId) => {
+          await updateBrowseCategoryStatus(textId, library.baseUrl).then(async (response) => {
+               if (!response.ok) {
+                    const error = getErrorMessage({ statusCode: response.status, problem: response.problem});
+                    setErrorTitle(error.title);
+                    setErrorMessage(error.message);
+                    logErrorMessage(response);
+                    setShowErrorDialog(true);
+               } else {
+                    await queryClient.invalidateQueries({ queryKey: ['browse_categories', library.baseUrl, language, maxNum] });
+                    await queryClient.invalidateQueries({ queryKey: ['browse_categories_list', library.baseUrl, language] });
+               }
+          });
+     }
+
+     const onPressHideAll = async (textId) => {
+          await updateBrowseCategoryStatus(textId, library.baseUrl, 'all').then(async (response) => {
+               if (!response.ok) {
+                    const error = getErrorMessage({ statusCode: response.status, problem: response.problem});
+                    setErrorTitle(error.title);
+                    setErrorMessage(error.message);
+                    logErrorMessage(response);
+                    setShowErrorDialog(true);
+               } else {
+                    await queryClient.invalidateQueries({ queryKey: ['browse_categories', library.baseUrl, language, maxNum] });
+                    await queryClient.invalidateQueries({ queryKey: ['browse_categories_list', library.baseUrl, language] });
+               }
+          });
+     }
+
+     return (
+          <SafeAreaView>
+               <View pb="$3">
+                    <HStack space="$3" alignItems="center" justifyContent="space-between" pb="$2">
+                         <DisplayBrowseCategoryTitle category={category.label} key={category.id} textId={category.textId} source={category.source ?? 'GroupedWork'} />
+                         {subCategories.length > 0 ? (
+                              <Button variant="outline" size="xs" borderColor={theme['colors']['primary']['500']} sx={{ paddingHorizontal: 6, paddingVertical: 0, height: 24 }} onPress={() => onPressHideAll(category.textId)}>
+                                   <ButtonIcon as={MaterialIcons} name="close" color={theme['colors']['primary']['500']} mr="$1" />
+                                   <ButtonText color={theme['colors']['primary']['500']}>{getTermFromDictionary(language, 'hide_all')}</ButtonText>
+                              </Button>
+                         ) : (
+                              <Button variant="outline" size="xs" borderColor={theme['colors']['primary']['500']} sx={{ paddingHorizontal: 6, paddingVertical: 0, height: 24 }} onPress={() => onPressHide(category.textId)}>
+                                   <ButtonIcon as={MaterialIcons} name="close" color={theme['colors']['primary']['500']} mr="$1" />
+                                   <ButtonText color={theme['colors']['primary']['500']}>{getTermFromDictionary(language, 'hide')}</ButtonText>
+                              </Button>
                          )}
-                    </LibrarySystemContext.Consumer>
-               );
+                    </HStack>
+                    {subCategories.length > 0 ? (
+                         <>
+                              <ScrollView horizontal>
+                                   <DisplaySubCategoryBar data={subCategoryRecords} subCategories={subCategories} selectedIndex={selectedSubCategoryIndex} onSelect={handleSelectSubCategory} />
+                              </ScrollView>
+                              {showSubCategoryRecords && <FlatList pb="$8" data={subCategoryRecords} keyExtractor={(item, index) => item.key?.toString() ?? index.toString()} horizontal renderItem={({ item }) => <DisplayBrowseCategoryRecord record={item} />} ListFooterComponent={subCategoryHasMore ? <DisplayMoreResultsButton category={subCategories[selectedSubCategoryIndex]} /> : null} />}
+                         </>
+                    ) : records.length > 0 ? (
+                         <FlatList pb="$8" data={displayedData} keyExtractor={(item, index) => item.id?.toString() ?? index.toString()} horizontal renderItem={({ item }) => <DisplayBrowseCategoryRecord record={item} />} ListFooterComponent={hasMore ? <DisplayMoreResultsButton category={category} /> : null} />
+                    ) : null}
+               </View>
+          </SafeAreaView>
+     );
+};
+
+const DisplayBrowseCategoryTitle = ({category, textId, source}) => {
+     const { colorMode, theme } = React.useContext(ThemeContext);
+
+     const onPressCategory = (label, key, source) => {
+          let screen = 'SearchByCategory';
+          if (source === 'List') {
+               screen = 'SearchByList';
+          } else if (source === 'SavedSearch') {
+               screen = 'SearchBySavedSearch';
+          }
+
+          navigateStack('BrowseTab', screen, {
+               title: label,
+               id: key,
+          });
+     };
+
+     return (
+          <Pressable maxWidth="80%" onPress={() => onPressCategory(category, textId, source)}>
+               <Text
+                    color={colorMode === 'light' ? theme['colors']['gray']['800'] : theme['colors']['coolGray']['200']}
+                    bold
+                    mb="$1"
+                    sx={{
+                         '@base': {
+                              fontSize: 18,
+                         },
+                         '@lg': {
+                              fontSize: 24,
+                         },
+                    }}>
+                    {category}
+               </Text>
+          </Pressable>
+     );
+}
+
+const DisplayBrowseCategoryRecord = ({record}) => {
+     const { library } = React.useContext(LibrarySystemContext);
+     const { theme } = React.useContext(ThemeContext);
+     const { language } = React.useContext(LanguageContext);
+
+     let type = 'grouped_work';
+     if (!_.isUndefined(record.source)) {
+          if (record.source === 'library_calendar' || record.source === 'springshare_libcal' || record.source === 'communico' || record.source === 'assabet' || record.source === 'aspenEvents') {
+               type = 'Event';
+          } else {
+               type = record.source;
           }
      }
 
-     return null;
-};
+     if (!_.isUndefined(record.recordtype)) {
+          type = record.recordtype;
+     }
+
+     let id = record.key ?? record.id;
+     if (type === 'Event') {
+          if (_.includes(id, 'lc_')) {
+               type = 'library_calendar_event';
+          }
+          if (_.includes(id, 'libcal_')) {
+               type = 'springshare_libcal_event';
+          }
+          if (_.includes(id, 'communico_')) {
+               type = 'communico_event';
+          }
+          if (_.includes(id, 'assabet_')) {
+               type = 'assabet_event';
+          }
+          if (_.includes(id, 'aspenEvent_')) {
+               type = 'aspenEvent_event';
+          }
+     }
+
+     if(type !== 'aspenEvent_event') {
+          type = type.toLowerCase();
+     }
+
+     const blurhash = 'MHPZ}tt7*0WC5S-;ayWBofj[K5RjM{ofM_';
+     const imageUrl = library.baseUrl + '/bookcover.php?id=' + id + '&size=medium&type=' + type;
+
+     let isNew = false;
+     if (typeof record.isNew !== 'undefined') {
+          isNew = record.isNew;
+     }
+
+     const onPressItem = (key, type, title) => {
+          if (type === 'List' || type === 'list') {
+               navigateStack('BrowseTab', 'SearchByList', {
+                    id: key,
+                    title: title,
+                    prevRoute: 'HomeScreen',
+               });
+          } else if (type === 'SavedSearch') {
+               navigateStack('BrowseTab', 'SearchBySavedSearch', {
+                    id: key,
+                    title: title,
+                    prevRoute: 'HomeScreen',
+               });
+          } else if (type === 'Event' || _.includes(type, '_event')) {
+               let eventSource = 'unknown';
+               if (type === 'communico_event') {
+                    eventSource = 'communico';
+               } else if (type === 'library_calendar_event') {
+                    eventSource = 'library_calendar';
+               } else if (type === 'springshare_libcal_event') {
+                    eventSource = 'springshare';
+               } else if (type === 'assabet_event') {
+                    eventSource = 'assabet';
+               } else if (type === 'aspenEvent_event') {
+                    eventSource = 'aspenEvents';
+               }
+
+               navigateStack('BrowseTab', 'EventScreen', {
+                    id: key,
+                    title: title,
+                    source: eventSource,
+                    prevRoute: 'HomeScreen',
+               });
+          } else {
+               navigateStack('BrowseTab', 'GroupedWorkScreen', {
+                    id: key,
+                    title: title,
+                    prevRoute: 'HomeScreen',
+               });
+          }
+     }
+
+     return (
+          <Pressable
+               onPress={() => onPressItem(id, type, record.title_display ?? record.title)}
+               ml="$1"
+               mr="$3"
+               sx={{
+                    '@base': {
+                         width: 100,
+                         height: 150,
+                    },
+                    '@lg': {
+                         width: 180,
+                         height: 250,
+                    },
+               }}>
+               <Image
+                    alt={record.title_display ?? record.title}
+                    source={imageUrl}
+                    style={{
+                         width: '100%',
+                         height: '100%',
+                         borderRadius: 4,
+                    }}
+                    placeholder={blurhash}
+                    transition={1000}
+                    contentFit="cover"
+               />
+               {isNew ? (
+                    <Box zIndex={1} alignItems="center">
+                         <Badge bgColor={theme['colors']['warning']['500']} mx={5} mt={-8}>
+                              <BadgeText bold color={theme['colors']['white']} textTransform="none">
+                                   {getTermFromDictionary(language, 'flag_new')}
+                              </BadgeText>
+                         </Badge>
+                    </Box>
+               ) : null}
+          </Pressable>
+     )
+}
+
+const DisplaySubCategoryBar = ({ subCategories, selectedIndex, onSelect, data }) => {
+     const queryClient = useQueryClient();
+
+     const { theme, textColor, colorMode } = React.useContext(ThemeContext);
+     const { library } = React.useContext(LibrarySystemContext);
+
+     const [showErrorDialog, setShowErrorDialog] = React.useState(false);
+     const [errorTitle, setErrorTitle] = React.useState('');
+     const [errorMessage, setErrorMessage] = React.useState('');
+
+     const onPressHideSubCategory = async (index) => {
+          let activeSubCategory = subCategories[index];
+          await updateBrowseCategoryStatus(activeSubCategory.textId, library.baseUrl).then(async (response) => {
+               if (!response.ok) {
+                    const error = getErrorMessage({ statusCode: response.status, problem: response.problem});
+                    setErrorTitle(error.title);
+                    setErrorMessage(error.message);
+                    logErrorMessage(response);
+                    setShowErrorDialog(true);
+               } else {
+                    await queryClient.invalidateQueries({ queryKey: ['browse_categories', library.baseUrl, language, maxNum] });
+                    await queryClient.invalidateQueries({ queryKey: ['browse_categories_list', library.baseUrl, language] });
+               }
+          });
+     }
+
+     return (
+         <ButtonGroup vertical space="sm" pb="$2">
+                {subCategories.map((subCategory, index) => (
+                     <Button key={index}
+                             bgColor={selectedIndex === index ? theme['colors']['primary']['500'] : theme['colors']['primary']['200'] }
+                             variant="solid"
+                             sx={{ paddingHorizontal: 12, height: 34 }}
+                             onPress={() => onSelect(index)}>
+                          <ButtonText fontWeight="$medium" color={theme['colors']['primary']['500-text']} >
+                               {subCategory.label}
+                          </ButtonText>
+                          <ButtonIcon as={MaterialIcons} name="close" onPress={() => onPressHideSubCategory(index)} size="sm" color={theme['colors']['primary']['500-text']} ml="$4" />
+                     </Button>
+                ))}
+         </ButtonGroup>
+     )
+}
+
+const DisplayMoreResultsButton = ({ category }) => {
+     const { theme } = React.useContext(ThemeContext);
+     const { language } = React.useContext(LanguageContext);
+
+     const onPressMoreResults = (label, key, source) => {
+          let screen = 'SearchByCategory';
+          if (source === 'List') {
+               screen = 'SearchByList';
+          } else if (source === 'SavedSearch') {
+               screen = 'SearchBySavedSearch';
+          }
+
+          navigateStack('BrowseTab', screen, {
+               title: label,
+               id: key,
+          });
+     }
+
+     return (
+          <Pressable
+               onPress={() => onPressMoreResults(category.label, category.textId, category.source ?? 'GroupedWork')}
+               ml="$1"
+               alignItems="center"
+               justifyContent="center"
+               mr="$3"
+               bgColor={theme['colors']['primary']['500']}
+               style={{
+                    borderRadius: 4,
+               }}
+               sx={{
+                    '@base': {
+                         width: 100,
+                         height: 150,
+                    },
+                    '@lg': {
+                         width: 180,
+                         height: 250,
+                    },
+               }}>
+               <Text bold color={theme['colors']['primary']['500-text']}>{getTermFromDictionary(language, 'view_more')}</Text>
+          </Pressable>
+     )
+}
 
 export default DisplayBrowseCategory;
