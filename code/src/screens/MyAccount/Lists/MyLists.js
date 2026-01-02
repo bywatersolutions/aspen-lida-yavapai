@@ -42,7 +42,10 @@ export const MyLists = () => {
 
      const [currentListGroup, setCurrentListGroup] = React.useState(-1);
      const [currentListGroupData, setCurrentListGroupData] = React.useState({
-          listGroupDetails: {},
+          listGroupDetails: {
+               title: '',
+               id: -1,
+          },
           listsInGroup: [],
      });
 
@@ -64,6 +67,9 @@ export const MyLists = () => {
                     setLoading(true);
                     queryClient.invalidateQueries({ queryKey: ['lists', user.id, library.baseUrl, language] });
                     queryClient.invalidateQueries({ queryKey: ['list_groups', user.id, library.baseUrl, language] });
+                    if(currentListGroup !== -1) {
+                         updateSelectedListGroup(currentListGroup);
+                    }
                     navigation.setParams({
                          hasPendingChanges: false,
                     });
@@ -146,6 +152,7 @@ export const MyLists = () => {
      });
 
      const updateSelectedListGroup = async (groupId) => {
+          setLoading(true);
           setCurrentListGroup(groupId);
           await getListGroupDetails(groupId, library.baseUrl).then((res) => {
                if(res.ok) {
@@ -156,6 +163,7 @@ export const MyLists = () => {
                     getErrorMessage(res.code ?? 0, res.problem);
                }
           });
+          setLoading(false);
      }
 
      const handleOpenList = (item) => {
@@ -181,7 +189,7 @@ export const MyLists = () => {
           let lastUpdated = moment.unix(item.dateUpdated);
           lastUpdated = moment(lastUpdated).format('MMM D, YYYY');
           const listLastUpdatedOn = getTermFromDictionary(language, 'last_updated_on') + ' ' + lastUpdated;
-          const numListItems = item.numTitles + ' ' + getTermFromDictionary(language, 'items');
+          const numListItems = item.numTitles ?? 0 + ' ' + getTermFromDictionary(language, 'items');
           let privacy = getTermFromDictionary(language, 'private');
           if (item.public === 1 || item.public === true || item.public === 'true') {
                privacy = getTermFromDictionary(language, 'public');
@@ -305,12 +313,12 @@ export const MyLists = () => {
                                    <Box borderBottomWidth="$1"
                                         _dark={{ borderColor: 'gray.600' }}
                                         borderColor="coolGray.200">
-                                        <Heading>{currentListGroupData.listGroupDetails.title}</Heading>
+                                        <Heading>{currentListGroupData.listGroupDetails?.title}</Heading>
                                         <ScrollView horizontal>
                                              <HStack space="sm">
-                                                  <EditListGroup id={currentListGroupData.listGroupDetails.id} currentTitle={currentListGroupData.listGroupDetails.title} />
-                                                  <EditListGroupParent id={currentListGroupData.listGroupDetails.id} parentId={currentListGroupData.listGroupDetails.parentGroupId} />
-                                                  <DeleteListGroup id={currentListGroupData.listGroupDetails.id} />
+                                                  <EditListGroup id={currentListGroupData.listGroupDetails?.id} currentTitle={currentListGroupData.listGroupDetails?.title} handleUpdate={updateSelectedListGroup} />
+                                                  <EditListGroupParent id={currentListGroupData.listGroupDetails?.id} parentId={currentListGroupData.listGroupDetails?.parentGroupId} handleUpdate={updateSelectedListGroup} />
+                                                  <DeleteListGroup id={currentListGroupData.listGroupDetails?.id} handleUpdate={updateSelectedListGroup} setCurrentListGroup={setCurrentListGroup} />
                                              </HStack>
                                         </ScrollView>
                                         <FlatList mt="$2" data={currentListGroupData.listsInGroup} renderItem={({ item }) => renderList(item, library.baseUrl)} keyExtractor={(item, index) => index.toString()} ListEmptyComponent={listEmptyComponent} />
