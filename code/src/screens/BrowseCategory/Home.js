@@ -16,7 +16,7 @@ import { NotificationsOnboard } from '../../components/NotificationsOnboard';
 import { BrowseCategoryContext, LanguageContext, LibrarySystemContext, SearchContext, SystemMessagesContext, ThemeContext, UserContext } from '../../context/initialContext';
 import { navigateStack, pushNavigateStack } from '../../helpers/RootNavigator';
 import { getTermFromDictionary } from '../../translations/TranslationService';
-import { formatDiscoveryVersion, reloadBrowseCategories } from '../../util/loadLibrary';
+import { formatDiscoveryVersion, getHomeScreenFeed } from '../../util/loadLibrary';
 import { updateBrowseCategoryStatus } from '../../util/loadPatron';
 import { getDefaultFacets, getSearchIndexes, getSearchSources } from '../../util/search';
 import DisplayBrowseCategory from './Category';
@@ -121,12 +121,12 @@ export const DiscoverHomeScreen = () => {
      const onLoadAllCategories = async () => {
           updateMaxCategories(9999);
           setLoading(true);
-          await reloadBrowseCategories(9999, library.baseUrl).then((response) => {
+          await getHomeScreenFeed(9999, library.baseUrl).then((response) => {
                if(response.ok) {
-                    const categories = response.data.result;
-                    updateBrowseCategories(categories);
-                    queryClient.setQueryData(['browse_categories', library.baseUrl, language, maxNum], categories);
-                    queryClient.setQueryData(['browse_categories', library.baseUrl, language, 9999], categories);
+                    const result = response.data.result;
+                    updateBrowseCategories(result.browseCategories);
+                    queryClient.setQueryData(['browse_categories', library.baseUrl, language, maxNum], result);
+                    queryClient.setQueryData(['browse_categories', library.baseUrl, language, 9999], result);
                } else {
                     logDebugMessage("Error fetching browse categories");
                     logDebugMessage(response);
