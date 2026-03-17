@@ -1,0 +1,15 @@
+{
+  "name": "YLN Catalog",
+  "slug": "yavapai",
+  "easId": "c70bd193-2c57-48aa-9eb4-9e08e72ba3f6",
+  "reverseDns": "info.yln.catalog",
+  "discoveryUrl": "https://catalog.yln.info/",
+  "greenhouseUrl": "https://catalog.yln.info/",
+  "libraryId": "2",
+  "themeId": "1",
+  "background": "#ffffff",
+  "sentryProject": "aspen-lida-yavapai",
+  "sentryDsn": "https://440552e6f994462cbd9b259804581fcc@o994439.ingest.sentry.io/6476910",
+  "ascAppId": "1634065317",
+  "logLevel": "0"
+}
